@@ -765,26 +765,27 @@ def initialize_nn_session(session: SessionState):
     if not NNINTERACTIVE_AVAILABLE:
         logger.info("nnInteractive not available - skipping initialization")
         return False
-    
     try:
-        if not torch.cuda.is_available():
-            logger.error("CUDA not available. nnInteractive requires GPU.")
-            return False
-        
-        logger.info(f"Initializing nnInteractive session for {session.session_id}...")
-        logger.info(f"CUDA device count: {torch.cuda.device_count()}")
-        logger.info(f"Current CUDA device: {torch.cuda.current_device()}")
-        
+        # Use GPU if available, else CPU
+        if torch.cuda.is_available():
+            device = torch.device("cuda:0")
+            logger.info(f"Initializing nnInteractive session for {session.session_id} on GPU...")
+            logger.info(f"CUDA device count: {torch.cuda.device_count()}")
+            logger.info(f"Current CUDA device: {torch.cuda.current_device()}")
+        else:
+            device = torch.device("cpu")
+            logger.info(f"CUDA not available. Initializing nnInteractive session for {session.session_id} on CPU.")
+
         session.session = nnInteractiveInferenceSession(
-            device=torch.device("cuda:0"),
+            device=device,
             verbose=False
         )
-        
+
         # Download model if needed
         model_dir = os.path.join(os.path.expanduser("~"), ".nninteractive_models")
         os.makedirs(model_dir, exist_ok=True)
         logger.info(f"Model directory: {model_dir}")
-        
+
         logger.info("Downloading/checking nnInteractive model...")
         download_path = snapshot_download(
             repo_id="nnInteractive/nnInteractive",
@@ -792,15 +793,15 @@ def initialize_nn_session(session: SessionState):
             local_dir=model_dir,
             local_dir_use_symlinks=False
         )
-        
+
         model_path = os.path.join(download_path, "nnInteractive_v1.0")
         logger.info(f"Model path: {model_path}")
-        
+
         logger.info("Initializing model from trained folder...")
         session.session.initialize_from_trained_model_folder(model_path)
         logger.info(f"nnInteractive session initialized successfully for {session.session_id}")
         return True
-        
+
     except Exception as e:
         logger.error(f"Failed to initialize nnInteractive for session {session.session_id}: {e}")
         import traceback
@@ -903,7 +904,7 @@ async def run_segmentation(session: SessionState = Depends(get_session)) -> Segm
         logger.info(f"Running segmentation with {len(session.all_3d_points)} points for session {session.session_id}...")
         logger.info(f"NNINTERACTIVE_AVAILABLE: {NNINTERACTIVE_AVAILABLE}")
         logger.info(f"CUDA available: {torch.cuda.is_available() if torch else False}")
-        
+
         # Clear previous segmentation files to avoid confusion
         for file_path in session.output_files:
             try:
@@ -913,11 +914,11 @@ async def run_segmentation(session: SessionState = Depends(get_session)) -> Segm
             except Exception as e:
                 logger.warning(f"Could not remove file {file_path}: {e}")
         session.output_files.clear()
-        
-        # Try nnInteractive first, fall back to mock
+
+        # Try nnInteractive first (on GPU or CPU), fall back to mock
         segmentation = None
         method = "mock"
-        
+
         logger.info(f"Checking if nnInteractive is available and can be initialized...")
         if NNINTERACTIVE_AVAILABLE and initialize_nn_session(session):
             logger.info(f"nnInteractive initialization successful, attempting segmentation...")
@@ -931,48 +932,48 @@ async def run_segmentation(session: SessionState = Depends(get_session)) -> Segm
                 else:
                     image_4d = nifti_data
                 logger.info(f"Image shape prepared: {image_4d.shape}")
-                
+
                 # Initialize segmentation
                 combined_segmentation = np.zeros(image_4d.shape[1:], dtype=np.uint8)
                 logger.info(f"Processing {len(session.all_3d_points)} points with nnInteractive...")
-                
+
                 # Process each point separately
                 for point_3d in session.all_3d_points:
                     # Use the actual point number as the label
                     point_tuple = (point_3d.z, point_3d.y, point_3d.x)
                     segment_label = session.point_to_number.get(point_tuple)
                     logger.info(f"Processing point {segment_label}/{len(session.all_3d_points)}: {point_3d}")
-                    
+
                     # Set image and target buffer
                     session.session.set_image(image_4d)
                     target_buffer = torch.zeros(image_4d.shape[1:], dtype=torch.uint8)
                     session.session.set_target_buffer(target_buffer)
-                    
+
                     # Add point interaction
                     point_tuple = (point_3d.z, point_3d.y, point_3d.x)
                     session.session.add_point_interaction(point_tuple, include_interaction=True)
-                    
+
                     # Get segmentation
                     point_segmentation = target_buffer.clone().cpu().numpy()
                     mask = point_segmentation > 0
                     available_mask = combined_segmentation == 0
                     final_mask = mask & available_mask
-                    
+
                     voxels_segmented = np.sum(final_mask)
                     logger.info(f"Point {segment_label} segmented {voxels_segmented} voxels")
-                    
+
                     combined_segmentation[final_mask] = segment_label
-                
+
                 segmentation = combined_segmentation
                 logger.info(f"nnInteractive segmentation completed successfully")
-                
+
             except Exception as e:
                 logger.error(f"nnInteractive failed for session {session.session_id}: {e}, falling back to mock")
                 method = "mock"
                 segmentation = None
         else:
             logger.info(f"nnInteractive not available or initialization failed, using mock segmentation")
-        
+
         # Fall back to mock segmentation
         if segmentation is None:
             logger.info(f"Starting mock segmentation...")
