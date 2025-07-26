@@ -1,0 +1,12 @@
+--extra-index-url https://download.pytorch.org/whl/cu128
+fastapi[all]==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+numpy>=1.26.0
+nibabel>=5.2.0
+torch>=2.1.0
+torchvision>=0.16.0
+huggingface-hub>=0.20.0
+pydantic>=2.5.0
+nninteractive
+pydicom>=2.4.0
