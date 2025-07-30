@@ -109,6 +109,90 @@ The application will be available at:
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 
+## Mac-Specific Setup Issues
+
+### Node.js Permission Fix
+
+If you encounter a "Permission denied" error when running `npm start` on macOS, you may need to fix the executable permissions for the Node.js binaries:
+
+```bash
+# Navigate to the frontend directory
+cd frontend
+
+# Fix permissions for all Node.js executables
+chmod +x node_modules/.bin/*
+
+# Alternatively, fix just react-scripts if needed
+chmod +x node_modules/.bin/react-scripts
+
+# Now run the application
+npm start
+```
+
+**Why this happens on Mac:**
+- When npm packages are installed or extracted, sometimes the executable files lose their execute permissions
+- This is more common when files are downloaded as ZIP archives or copied between systems
+- The `chmod +x` command restores the necessary execute permissions
+
+**Verification:**
+You can verify the permissions are correct by checking:
+```bash
+ls -la node_modules/.bin/react-scripts
+```
+You should see `-rwxrwxr-x` (with `x` indicating execute permissions) instead of `-rw-rw-r--`.
+
+### Alternative: Google Colab Setup (Recommended for Mac Users)
+
+For Mac users who prefer not to install dependencies locally, you can run the backend using Google Colab:
+
+#### Step 1: Set up ngrok Account
+1. Go to [ngrok.com](https://ngrok.com) and create a free account
+2. Navigate to your ngrok dashboard and copy your **Auth Token**
+3. Save this token - you'll need it in the notebook
+
+#### Step 2: Import the Notebook to Google Colab
+1. Open [Google Colab](https://colab.research.google.com)
+2. Click "File" → "Upload notebook"
+3. Upload the `segmentation_api.ipynb` file from this repository
+4. Alternatively, you can open it directly from GitHub:
+   - Click "File" → "Open notebook" → "GitHub" tab
+   - Enter the repository URL or search for the notebook
+
+#### Step 3: Configure and Run the Notebook
+1. **Install Dependencies**: Run the first cell to install required packages
+2. **Set ngrok Auth Token**: In the auth token cell, replace the placeholder with your actual ngrok auth token:
+   ```python
+   auth_token = "YOUR_ACTUAL_NGROK_TOKEN_HERE"
+   ngrok.set_auth_token(auth_token)
+   ```
+3. **Create Tunnel**: Run the tunnel cell to get your public URL
+4. **Start Server**: Run the final cell to start the FastAPI server
+
+#### Step 4: Configure Frontend
+1. Copy the ngrok public URL (e.g., `https://abc123.ngrok-free.app`)
+2. In your local `frontend/src/App.js`, update the API_BASE constant:
+   ```javascript
+   const API_BASE = process.env.NODE_ENV === 'production' ? '' : 'https://YOUR_NGROK_URL_HERE';
+   ```
+3. Start the frontend locally:
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+
+#### Benefits of Colab Setup:
+- ✅ No local Python environment setup required
+- ✅ GPU acceleration available for faster segmentation
+- ✅ All dependencies pre-configured
+- ✅ Works on any Mac regardless of local configuration
+- ✅ Easy to share and collaborate
+
+#### Important Notes:
+- The ngrok tunnel URL changes each time you restart the notebook
+- Free ngrok accounts have session limits - for production use, consider ngrok paid plans
+- Keep your ngrok auth token secure and don't share it publicly
+
 ## Usage
 
 1. **Upload File**: Drag and drop a NIfTI file or click to browse
