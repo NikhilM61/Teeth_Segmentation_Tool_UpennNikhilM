@@ -40,7 +40,7 @@ class SessionManager {
   }
 
   getHeaders() {
-    const headers = {};
+    const headers = {'ngrok-skip-browser-warning': 'true'};
     if (this.sessionId) {
       headers['X-Session-ID'] = this.sessionId;
     }
