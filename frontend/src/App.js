@@ -253,7 +253,7 @@ function App() {
         method: 'POST',
         data: formData,
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000, // 2 minute timeout for large files
+        timeout: 1200000, // 2 minute timeout for large files
         onUploadProgress: (progressEvent) => {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setStatus({ type: 'info', message: `Uploading... ${percentCompleted}%` });
