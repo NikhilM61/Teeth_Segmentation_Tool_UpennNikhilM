@@ -178,6 +178,14 @@ For Mac users who prefer not to install dependencies locally, you can run the ba
    ```bash
    cd frontend
    npm install
+   
+   # Mac users: Fix Node.js permissions if needed
+   chmod +x node_modules/.bin/*
+   
+   # Alternatively, fix just react-scripts if needed
+   chmod +x node_modules/.bin/react-scripts
+   
+   # Now run the application
    npm start
    ```
 
