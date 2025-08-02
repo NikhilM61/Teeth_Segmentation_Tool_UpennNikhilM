@@ -203,10 +203,10 @@ function App() {
       return;
     }
     
-    // Check file size (500MB limit)
-    const maxSize = 500 * 1024 * 1024; // 500MB
+    // Check file size (1000MB limit)
+    const maxSize = 1000 * 1024 * 1024; // 1000MB
     if (selectedFile.size > maxSize) {
-      setStatus({ type: 'error', message: `File too large (${(selectedFile.size / (1024*1024)).toFixed(1)}MB). Maximum size is 500MB.` });
+      setStatus({ type: 'error', message: `File too large (${(selectedFile.size / (1024*1024)).toFixed(1)}MB). Maximum size is 1000MB.` });
       return;
     }
     
