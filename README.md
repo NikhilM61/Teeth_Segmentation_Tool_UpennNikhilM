@@ -29,7 +29,7 @@ A web-based interface for interactive dental segmentation using NIfTI files and 
 
 ### Prerequisites
 - **Python**: 3.12 or higher
-- **Node.js**: 14.x or higher  
+- **Node.js**: 14.x or higher ([Download here](https://nodejs.org/en/download))
 - **npm**: 6.x or higher
 - **Conda**: For Python environment management (recommended)
 
